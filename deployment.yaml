@@ -14,16 +14,17 @@ spec:
     spec:
       containers:
       - name: health-api
-        image: monitoringacr01.azurecr.io/health-api:latest
+        image: monitoringacr01.azurecr.io/health-api:$(Build.BuildId)
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
         env:
         - name: BUILD_VERSION
-          value: "v1.0.0"
+          value: "$(BUILD_VERSION)"
         - name: GIT_COMMIT
-          value: "abc123"
+          value: "$(GIT_COMMIT)"
         - name: RELEASE_ID
-          value: "001"
+          value: "$(RELEASE_ID)"
 ---
 apiVersion: v1
 kind: Service

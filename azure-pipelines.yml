@@ -2,13 +2,16 @@ trigger:
 - main
 
 variables:
-  dockerRegistryServiceConnection: 'monitorsc'  # Replace with your actual service connection name
+  dockerRegistryServiceConnection: 'monitoringacr'
   imageRepository: 'health-api'
-  containerRegistry: 'monitoringacr01.azurecr.io'       # e.g., brendaacr.azurecr.io
+  containerRegistry: 'monitoringacr01.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
-  gitCommit: '$(Build.SourceVersion)'
-  releaseId: '$(Build.BuildId)'  # Use Build ID here since Release stage is in YAML now
+
+  # Variables passed to container
+  BUILD_VERSION: 'v$(Build.BuildId)'
+  GIT_COMMIT: '$(Build.SourceVersion)'
+  RELEASE_ID: '$(Build.BuildId)'
 
 stages:
 - stage: Build
@@ -20,33 +23,46 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - checkout: self
+
     - task: Docker@2
       displayName: 'Build and Push Docker image'
       inputs:
-        containerRegistry: '$(dockerRegistryServiceConnection)'
-        repository: '$(imageRepository)'
-        command: 'buildAndPush'
-        Dockerfile: '$(dockerfilePath)'
+        containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageRepository)
+        command: buildAndPush
+        Dockerfile: $(dockerfilePath)
         tags: |
           $(tag)
-          latest
-        arguments: |
-          --build-arg GIT_COMMIT=$(gitCommit) --build-arg RELEASE_ID=$(releaseId)
 
 - stage: Deploy
   displayName: 'Deploy to AKS'
   dependsOn: Build
   jobs:
   - job: DeployToAKS
-    displayName: 'kubectl apply deployment.yaml'
+    displayName: 'Generate Deployment and Apply'
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    - checkout: self
+
+    - task: PowerShell@2
+      displayName: 'Transform deployment-template.yaml → deployment.yaml'
+      env:
+        BUILD_VERSION: $(BUILD_VERSION)
+        GIT_COMMIT: $(GIT_COMMIT)
+        RELEASE_ID: $(RELEASE_ID)
+      inputs:
+        targetType: 'inline'
+        script: |
+          $templatePath = "$(System.DefaultWorkingDirectory)/deployment-template.yaml"
+          $outputPath = "$(System.DefaultWorkingDirectory)/deployment.yaml"
+          (Get-Content $templatePath) -replace '\$\((\w+)\)', { param($m) $env:$($m.Groups[1].Value) } > $outputPath
+
     - task: Kubernetes@1
       displayName: 'Deploy to AKS'
       inputs:
         connectionType: 'Azure Resource Manager'
-        azureSubscriptionEndpoint: 'aks0sc'  # ⚠️ Not subscription name
+        azureSubscriptionEndpoint: 'aks0sc'
         azureResourceGroup: 'aks-rg'
         kubernetesCluster: 'aks01'
         command: apply
