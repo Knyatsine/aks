@@ -1,5 +1,5 @@
 trigger:
-- main
+- master
 
 variables:
   dockerRegistryServiceConnection: 'monitorsc'
@@ -46,7 +46,7 @@ stages:
     - checkout: self
 
     - task: PowerShell@2
-      displayName: 'Transform deployment-template.yaml → deployment.yaml'
+      displayName: 'Transform deployment.yaml in-place'
       env:
         BUILD_VERSION: $(BUILD_VERSION)
         GIT_COMMIT: $(GIT_COMMIT)
@@ -54,15 +54,15 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          $templatePath = "$(System.DefaultWorkingDirectory)/deployment-template.yaml"
-          $outputPath = "$(System.DefaultWorkingDirectory)/deployment.yaml"
-          $content = Get-Content $templatePath -Raw
+          $filePath = "$(System.DefaultWorkingDirectory)/deployment.yaml"
+          $content = Get-Content $filePath -Raw
           $updatedContent = $content -replace '\$\((\w+)\)', {
             param($match)
             $envVar = $match.Groups[1].Value
             (Get-Item "Env:$envVar").Value
           }
-          Set-Content -Path $outputPath -Value $updatedContent
+          Set-Content -Path $filePath -Value $updatedContent
+
 
     - task: Kubernetes@1
       displayName: 'Deploy to AKS'
