@@ -58,9 +58,9 @@ stages:
           $outputPath = "$(System.DefaultWorkingDirectory)/deployment.yaml"
           $content = Get-Content $templatePath -Raw
           $updatedContent = $content -replace '\$\((\w+)\)', { 
-            param($match) 
-            $envVar = $match.Groups[1].Value
-            return $env:$envVar 
+          param($match) 
+          $envVar = $match.Groups[1].Value
+          return $env:$envVar
           }
           Set-Content -Path $outputPath -Value $updatedContent
 
