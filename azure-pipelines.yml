@@ -2,7 +2,7 @@ trigger:
 - main
 
 variables:
-  dockerRegistryServiceConnection: 'monitoringacr'  # Replace with your actual service connection name
+  dockerRegistryServiceConnection: 'monitorsc'  # Replace with your actual service connection name
   imageRepository: 'health-api'
   containerRegistry: 'monitoringacr01.azurecr.io'       # e.g., brendaacr.azurecr.io
   dockerfilePath: '**/Dockerfile'
