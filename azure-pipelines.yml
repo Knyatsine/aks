@@ -57,13 +57,12 @@ stages:
           $templatePath = "$(System.DefaultWorkingDirectory)/deployment-template.yaml"
           $outputPath = "$(System.DefaultWorkingDirectory)/deployment.yaml"
           $content = Get-Content $templatePath -Raw
-          $updatedContent = $content -replace '\$\((\w+)\)', { 
-          param($match) 
-          $envVar = $match.Groups[1].Value
-          return $env:$envVar
+          $updatedContent = $content -replace '\$\((\w+)\)', {
+            param($match)
+            $envVar = $match.Groups[1].Value
+            (Get-Item "Env:$envVar").Value
           }
           Set-Content -Path $outputPath -Value $updatedContent
-
 
     - task: Kubernetes@1
       displayName: 'Deploy to AKS'
