@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-api
+  template:
+    metadata:
+      labels:
+        app: health-api
+    spec:
+      containers:
+      - name: health-api
+        image: kaybee2014/health-api:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: BUILD_VERSION
+          value: "v1.0.0"
+        - name: GIT_COMMIT
+          value: "abc123"
+        - name: RELEASE_ID
+          value: "001"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-api-service
+spec:
+  selector:
+    app: health-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
