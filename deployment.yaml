@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: health-api
-        image: kaybee2014/health-api:latest
+        image: monitoringacr01.azurecr.io/health-api:latest
         ports:
         - containerPort: 80
         env:
