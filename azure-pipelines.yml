@@ -56,12 +56,23 @@ stages:
         script: |
           $filePath = "$(System.DefaultWorkingDirectory)/deployment.yaml"
           $content = Get-Content $filePath -Raw
-          $updatedContent = $content -replace '\$\((\w+)\)', {
+
+          # Define a script block that replaces $(VARIABLE) with its env value
+          $updatedContent = [regex]::Replace($content, '\$\((\w+)\)', {
             param($match)
             $envVar = $match.Groups[1].Value
-            (Get-Item "Env:$envVar").Value
-          }
-          Set-Content -Path $filePath -Value $updatedContent
+            $value = (Get-Item "Env:$envVar").Value
+            if (-not $value) {
+              Write-Host "⚠️  Environment variable '$envVar' is not set. Replacing with 'undefined'."
+              return "undefined"
+            }
+            Write-Host "✅ Replacing $($match.Value) with '$value'"
+            return $value
+          })
+
+          # Write the transformed YAML back to file
+          Set-Content -Path $filePath -Value $updatedContent -Force
+
 
 
     - task: Kubernetes@1
